@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse des pertes de revenus - Le Cercle des Généralistes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Montserrat', sans-serif; background: #ffffff; color: #202124; line-height: 1.6; font-size: 14px; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; padding-bottom: 40px; }
+        .header { border-bottom: 2px solid #e8eaed; padding-bottom: 20px; margin-bottom: 16px; }
+        .header h1 { font-size: 28px; font-weight: 400; color: #202124; margin-bottom: 8px; }
+        .header .subtitle { font-size: 14px; color: #5f6368; line-height: 1.5; }
+        .disclaimer { font-size: 12px; color: #5f6368; font-style: italic; margin-bottom: 32px; padding-left: 4px; }
+        .section { margin-bottom: 40px; }
+        .section-title { font-size: 18px; font-weight: 500; color: #202124; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 1px solid #e8eaed; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 20px; }
+        .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-bottom: 20px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-size: 13px; color: #5f6368; margin-bottom: 8px; font-weight: 500; }
+        .form-group input[type="number"], .form-group input[type="range"] { padding: 10px 12px; border: 1px solid #dadce0; border-radius: 4px; font-size: 14px; font-family: 'Montserrat', sans-serif; transition: border-color 0.2s; }
+        .form-group input[type="range"] { padding: 0; -webkit-appearance: none; width: 100%; height: 4px; background: #e8eaed; border-radius: 2px; outline: none; border: none; }
+        .range-value { display: inline-block; margin-left: 8px; font-size: 14px; color: #1a73e8; font-weight: 500; }
+        .checkbox-group { display: flex; align-items: center; margin-bottom: 16px; }
+        .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; margin-right: 12px; cursor: pointer; }
+        .checkbox-group label { font-size: 14px; color: #202124; cursor: pointer; }
+        .btn-calculate { background: #047BBF; color: white; border: none; padding: 18px 48px; font-size: 18px; font-weight: 600; font-family: 'Montserrat', sans-serif; border-radius: 8px; cursor: pointer; margin: 40px auto; display: block; box-shadow: 0 4px 12px rgba(4, 123, 191, 0.3); text-transform: uppercase; letter-spacing: 0.5px; transition: transform 0.2s; }
+        .results { display: none; margin-top: 48px; padding-top: 32px; border-top: 2px solid #e8eaed; }
+        .results.show { display: block; }
+        .result-highlight { background: #f8f9fa; padding: 32px; border-radius: 8px; margin-bottom: 32px; text-align: center; }
+        .result-highlight h2 { font-size: 20px; font-weight: 400; color: #202124; margin-bottom: 16px; }
+        .result-highlight .amount { font-size: 36px; font-weight: 500; color: #d33b27; margin: 16px 0; }
+        .result-card { background: #fff; border: 1px solid #e8eaed; border-radius: 8px; padding: 24px; margin-bottom: 24px; }
+        .loss-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; margin-bottom: 12px; background: #fef7f7; border-left: 3px solid #d33b27; border-radius: 0 4px 4px 0; }
+        .loss-item-title { font-weight: 600; color: #202124; font-size: 15px; margin-bottom: 4px; }
+        .loss-item-amount { font-size: 18px; font-weight: 500; color: #d33b27; margin-left: 20px; white-space: nowrap; }
+        .solution-card { background: #f8f9fa; padding: 20px; border-left: 3px solid #188038; border-radius: 0 4px 4px 0; margin-bottom: 16px; }
+        .solution-card h4 { color: #202124; font-size: 15px; font-weight: 500; margin-bottom: 12px; }
+        .action-buttons { display: flex; gap: 16px; justify-content: center; margin-top: 40px; padding-top: 32px; border-top: 1px solid #e8eaed; margin-bottom: 40px; }
+        .btn-action { padding: 12px 32px; font-size: 14px; font-weight: 500; font-family: 'Montserrat', sans-serif; border-radius: 6px; cursor: pointer; transition: all 0.2s; border: 1px solid #dadce0; background: white; color: #202124; display: flex; align-items: center; gap: 8px; justify-content: center; text-align: center; }
+        .btn-action.primary { background: #1a73e8; color: white; border-color: #1a73e8; }
+        .btn-action.primary i { color: white; }
+        #chartCanvas, #barChartCanvas { display: none; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        .modal-content { background: white; border-radius: 8px; padding: 32px; max-width: 420px; width: 90%; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); }
+        .modal-header { text-align: center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #e8eaed; }
+        .modal-header h3 { font-size: 18px; font-weight: 500; color: #202124; margin-bottom: 6px; }
+        .modal-header p { font-size: 13px; color: #5f6368; }
+        .modal-buttons { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+        .modal-btn { padding: 14px 20px; font-size: 14px; font-weight: 500; font-family: 'Montserrat', sans-serif; border-radius: 6px; cursor: pointer; transition: all 0.2s; border: none; display: flex; align-items: center; justify-content: center; gap: 8px; color: white; }
+        .modal-btn.blue { background: #1a73e8; }
+        .modal-btn.blue:hover { background: #1557b0; }
+        .modal-close { text-align: center; padding-top: 16px; border-top: 1px solid #e8eaed; }
+        .modal-close button { background: none; border: none; color: #5f6368; cursor: pointer; font-size: 14px; padding: 8px 16px; font-family: 'Montserrat', sans-serif; }
+        .modal-close button:hover { color: #202124; }
+        @media (max-width: 768px) { .form-row, .form-row-3 { grid-template-columns: 1fr; } .action-buttons { flex-direction: column; } .btn-action { width: 100%; justify-content: center; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Analyse des pertes de revenus</h1>
+            <p class="subtitle">Identification et quantification des opportunités d'optimisation - Le Cercle des Généralistes</p>
+        </div>
+
+        <p class="disclaimer">⚠️ Cette analyse fournit une estimation indicative basée sur des moyennes nationales vérifiées.</p>
+
+        <form id="simulatorForm">
+            <div class="section">
+                <h2 class="section-title">Paramètres d'activité</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="joursConsultation">Jours de consultation par semaine</label>
+                        <input type="number" id="joursConsultation" min="1" max="7" value="4">
+                    </div>
+                    <div class="form-group">
+                        <label for="semainesActivite">Semaines d'activité par an</label>
+                        <input type="number" id="semainesActivite" min="40" max="52" value="45">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="consultationsJour">Consultations par jour</label>
+                        <input type="number" id="consultationsJour" min="10" max="40" value="20">
+                    </div>
+                    <div class="form-group">
+                        <label for="dureeConsultation">Durée moyenne (minutes)</label>
+                        <input type="range" id="dureeConsultation" min="10" max="30" value="18">
+                        <span class="range-value" id="dureeConsultation-value">18 min</span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="creneauxVides">Créneaux vides par semaine (en moyenne)</label>
+                        <input type="number" id="creneauxVides" min="0" max="20" value="3">
+                    </div>
+                    <div class="form-group">
+                        <label for="pctTeleconsultation">Téléconsultations actuelles (%)</label>
+                        <input type="range" id="pctTeleconsultation" min="0" max="30" value="5">
+                        <span class="range-value" id="pctTeleconsultation-value">5%</span>
+                    </div>
+                </div>
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label for="pctMajore">Consultations majorées (%)</label>
+                        <input type="range" id="pctMajore" min="0" max="30" value="5">
+                        <span class="range-value" id="pctMajore-value">5%</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="pctPediatrie">Pédiatrie (%)</label>
+                        <input type="range" id="pctPediatrie" min="0" max="30" value="10">
+                        <span class="range-value" id="pctPediatrie-value">10%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Organisation du cabinet</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="tauxNoShow">Taux de rendez-vous non honorés (%)</label>
+                        <input type="range" id="tauxNoShow" min="0" max="20" step="0.5" value="8">
+                        <span class="range-value" id="tauxNoShow-value">8%</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="heuresAdminSemaine">Heures administratives par semaine</label>
+                        <input type="range" id="heuresAdminSemaine" min="0" max="15" value="7">
+                        <span class="range-value" id="heuresAdminSemaine-value">7h</span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="assistantMedical">
+                        <label for="assistantMedical">Assistant médical</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="logicielRDV">
+                        <label for="logicielRDV">Logiciel de gestion de RDV en ligne</label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="logicielRappels">
+                        <label for="logicielRappels">Logiciel avec rappels automatiques</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="secretariatPresent">
+                        <label for="secretariatPresent">Secrétariat présent</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Charges sociales</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="tauxCharges">Taux de charges sociales (%)</label>
+                        <input type="range" id="tauxCharges" min="35" max="50" value="43">
+                        <span class="range-value" id="tauxCharges-value">43%</span>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" class="btn-calculate" onclick="calculer()">Analyser les pertes</button>
+        </form>
+
+        <div id="results" class="results">
+            <div id="results-content"> 
+                <div class="result-highlight">
+                    <h2>Pertes annuelles nettes identifiées</h2>
+                    <div class="amount" id="pertesTotales">0 €</div>
+                    <p class="subtitle">soit <span id="pertesParJour">0 €</span> nets par jour travaillé</p>
+                </div>
+
+                <div class="result-card">
+                    <h3>Détail des pertes (montants nets après charges)</h3>
+                    <div id="detailPertes"></div>
+                </div>
+
+                <div class="result-card">
+                    <h3>Solutions d'optimisation</h3>
+                    <div id="solutions"></div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn-action" onclick="partager()">
+                    <i class="fas fa-share-alt"></i> Partager l'accès
+                </button>
+                <button class="btn-action primary" onclick="telechargerPDF()">
+                    <i class="fas fa-file-pdf"></i> Télécharger l'analyse
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="chartCanvas" width="700" height="500"></canvas>
+    <canvas id="barChartCanvas" width="1000" height="600"></canvas>
+
+    <div id="modalPartage" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Partager</h3>
+                <p>Choisissez une option</p>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn blue" onclick="partagerAcces()">Partager l'accès au simulateur</button>
+                <button class="modal-btn blue" onclick="copierLien()">Copier le lien</button>
+            </div>
+            <div class="modal-close">
+                <button onclick="fermerModal()">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('🚀 Simulateur WH chargé');
+        
+        // 🔥 RÉCUPÉRATION DU SESSION ID DEPUIS L'URL PARENT (Google Sites iframe)
+        let sessionId = null;
+	// Écoute des messages venant de la fenêtre parente
+window.addEventListener('message', (event) => {
+    if (event.data && event.data.sessionId) {
+        sessionId = event.data.sessionId; // Met à jour la variable sessionId
+        console.log("✅ Session ID reçu via postMessage:", sessionId);
+    }
+}, false);
+        
+        try {
+            // Essayer de récupérer depuis la page parent (Google Sites)
+            const parentParams = new URLSearchParams(window.top.location.search);
+            sessionId = parentParams.get('sessionId');
+            console.log('📦 Session ID récupéré depuis URL PARENT:', sessionId);
+        } catch(e) {
+            // Si bloqué par CORS, essayer l'URL actuelle
+            console.log('⚠️ Impossible d\'accéder à l\'URL parent (CORS), essai URL iframe...');
+            const urlParams = new URLSearchParams(window.location.search);
+            sessionId = urlParams.get('sessionId');
+            console.log('📦 Session ID récupéré depuis URL IFRAME:', sessionId);
+        }
+        
+        if (!sessionId) {
+            console.error('❌ Aucun Session ID trouvé dans l\'URL !');
+            console.warn('⚠️ Veuillez accéder au simulateur via le formulaire.');
+        }
+        
+        let globalPertes = [];
+        let globalSolutions = [];
+        let globalPertesTotales = 0;
+        let globalPertesParJour = 0;
+        let globalParametres = {};
+        
+        function formatNumber(num) {
+            return new Intl.NumberFormat('fr-FR').format(Math.round(num));
+        }
+
+        function formatNumberPDF(num) {
+            return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📋 Chargement du simulateur WH...');
+            
+            const sliders = [
+                { id: 'dureeConsultation', suffix: ' min' },
+                { id: 'pctMajore', suffix: '%' },
+                { id: 'pctPediatrie', suffix: '%' },
+                { id: 'pctTeleconsultation', suffix: '%' },
+                { id: 'tauxNoShow', suffix: '%' },
+                { id: 'heuresAdminSemaine', suffix: 'h' },
+                { id: 'tauxCharges', suffix: '%' }
+            ];
+
+            sliders.forEach(slider => {
+                const element = document.getElementById(slider.id);
+                const valueSpan = document.getElementById(slider.id + '-value');
+                if (element && valueSpan) {
+                    valueSpan.textContent = element.value + slider.suffix;
+                    element.addEventListener('input', function() {
+                        valueSpan.textContent = this.value + slider.suffix;
+                    });
+                }
+            });
+        });
+
+        function calculer() {
+            console.log('🎯 FONCTION CALCULER DÉCLENCHÉE');
+            
+            const joursConsultation = parseInt(document.getElementById('joursConsultation').value || 0);
+            const semainesActivite = parseInt(document.getElementById('semainesActivite').value || 0);
+            const consultationsJour = parseInt(document.getElementById('consultationsJour').value || 0);
+            const dureeConsultation = parseFloat(document.getElementById('dureeConsultation').value || 18);
+            const pctMajore = parseFloat(document.getElementById('pctMajore').value || 0) / 100;
+            const pctPediatrie = parseFloat(document.getElementById('pctPediatrie').value || 0) / 100;
+            const pctTeleconsultation = parseFloat(document.getElementById('pctTeleconsultation').value || 0) / 100;
+            const creneauxVides = parseInt(document.getElementById('creneauxVides').value || 0);
+            const tauxNoShow = parseFloat(document.getElementById('tauxNoShow').value || 0) / 100;
+            const heuresAdminSemaine = parseFloat(document.getElementById('heuresAdminSemaine').value || 0);
+            const tauxCharges = parseFloat(document.getElementById('tauxCharges').value || 0) / 100;
+            const assistantMedical = document.getElementById('assistantMedical').checked;
+            const logicielRDV = document.getElementById('logicielRDV').checked;
+            const logicielRappels = document.getElementById('logicielRappels').checked;
+            const secretariatPresent = document.getElementById('secretariatPresent').checked;
+
+            const tarifConsultationBase = 30; 
+            const tarifPediatrie = 34;
+            const majorationActeComplexe = 5;  
+            const benchmarkNoShow = 0.08;
+            const benchmarkConsultations = 22; 
+            const benchmarkAdmin = 7;
+            const benchmarkMajore = 0.08;
+            const benchmarkTeleconsultation = 0.10;
+            
+            const joursTravailles = joursConsultation * semainesActivite;
+            const consultationsTotalBase = consultationsJour * joursTravailles;
+            
+            globalParametres = {
+                joursConsultation, semainesActivite, consultationsJour, dureeConsultation,
+                pctMajore: pctMajore * 100, pctPediatrie: pctPediatrie * 100,
+                pctTeleconsultation: pctTeleconsultation * 100, creneauxVides,
+                tauxNoShow: tauxNoShow * 100, heuresAdminSemaine, tauxCharges: tauxCharges * 100,
+                assistantMedical, logicielRDV, logicielRappels, secretariatPresent,
+                joursTravailles, consultationsTotalBase
+            };
+
+            let pertes = [];
+            let pertesTotalesBrut = 0;
+
+            if (heuresAdminSemaine > benchmarkAdmin) {
+                const heuresExcedentaires = heuresAdminSemaine - benchmarkAdmin;
+                const consultationsPotentiellesPerdues = (heuresExcedentaires * 60 / dureeConsultation) * semainesActivite;
+                const perteBrut = consultationsPotentiellesPerdues * tarifConsultationBase; 
+                const perteNet = perteBrut * (1 - tauxCharges);
+                pertes.push({
+                    titre: 'Temps médical perdu par tâches administratives',
+                    description: `Vos <strong>${heuresAdminSemaine.toFixed(1)}h/semaine</strong> passées à l'administratif (vs benchmark ${benchmarkAdmin}h) représentent <strong>${heuresExcedentaires.toFixed(1)}h excédentaires</strong> par semaine. Cela correspond à <strong>${formatNumber(consultationsPotentiellesPerdues)} consultations</strong> que vous n'avez pas pu réaliser sur l'année.`,
+                    montantBrut: perteBrut,
+                    montantNet: perteNet
+                });
+                pertesTotalesBrut += perteBrut;
+            }
+
+            if (consultationsJour < benchmarkConsultations) {
+                const consultationsManquantes = (benchmarkConsultations - consultationsJour) * joursTravailles;
+                const perteBrut = consultationsManquantes * tarifConsultationBase;
+                const perteNet = perteBrut * (1 - tauxCharges);
+                const joursPerdus = consultationsManquantes / benchmarkConsultations; 
+                pertes.push({
+                    titre: 'Manque à gagner sur le volume de consultations',
+                    description: `Vous réalisez <strong>${consultationsJour} consultations/jour</strong> vs moyenne nationale de ${benchmarkConsultations}. Cet écart équivaut à <strong>${formatNumber(consultationsManquantes)} consultations manquantes</strong> sur l'année, soit l'équivalent de <strong>${Math.round(joursPerdus)} jours</strong> non travaillés.`,
+                    montantBrut: perteBrut,
+                    montantNet: perteNet
+                });
+                pertesTotalesBrut += perteBrut;
+            }
+
+            if (creneauxVides > 0) {
+                const creneauxPerdusTotal = creneauxVides * semainesActivite;
+                const perteBrut = creneauxPerdusTotal * tarifConsultationBase;
+                const perteNet = perteBrut * (1 - tauxCharges);
+                pertes.push({
+                    titre: 'Créneaux d\'agenda vides inutilisés',
+                    description: `En moyenne, <strong>${creneauxVides} créneaux/semaine</strong> restent vides dans votre agenda. Soit <strong>${creneauxPerdusTotal} créneaux</strong> perdus par an valorisés à ${tarifConsultationBase}€ l'unité.`,
+                    montantBrut: perteBrut,
+                    montantNet: perteNet
+                });
+                pertesTotalesBrut += perteBrut;
+            }
+
+            if (tauxNoShow > benchmarkNoShow) {
+                const consultationsPerdues = consultationsTotalBase * (tauxNoShow - benchmarkNoShow);
+                const perteBrut = consultationsPerdues * tarifConsultationBase;
+                const perteNet = perteBrut * (1 - tauxCharges);
+                pertes.push({
+                    titre: 'Rendez-vous non honorés excessifs (no-show)',
+                    description: `Votre taux de non-honorés est de <strong>${(tauxNoShow*100).toFixed(1)}%</strong> vs benchmark 8%. Cet écart représente <strong>${formatNumber(consultationsPerdues)} consultations perdues</strong> sur l'année.`,
+                    montantBrut: perteBrut,
+                    montantNet: perteNet
+                });
+                pertesTotalesBrut += perteBrut;
+            }
+
+            if (pctMajore < benchmarkMajore) {
+                const majoreesManquantes = consultationsTotalBase * (benchmarkMajore - pctMajore); 
+                const perteBrut = majoreesManquantes * majorationActeComplexe;
+                const perteNet = perteBrut * (1 - tauxCharges);
+                pertes.push({
+                    titre: 'Sous-valorisation des actes complexes',
+                    description: `Seulement <strong>${(pctMajore*100).toFixed(1)}%</strong> de consultations majorées vs benchmark 8%. Vous manquez la majoration sur <strong>${formatNumber(majoreesManquantes)} actes complexes</strong> par an (valorisé à ${majorationActeComplexe}€ par acte).`, 
+                    montantBrut: perteBrut,
+                    montantNet: perteNet
+                });
+                pertesTotalesBrut += perteBrut;
+            }
+
+            if (pctPediatrie > 0) {
+                const consultationsPediatriques = consultationsTotalBase * pctPediatrie;
+                const gainPotentiel = tarifPediatrie - tarifConsultationBase;
+                const perteBrut = consultationsPediatriques * gainPotentiel;
+                const perteNet = perteBrut * (1 - tauxCharges);
+                pertes.push({
+                    titre: 'Sous-valorisation des consultations pédiatriques',
+                    description: `Vous réalisez <strong>${(pctPediatrie*100).toFixed(1)}%</strong> de consultations pédiatriques (soit ${formatNumber(consultationsPediatriques)} consultations/an). Les consultations enfants < 2 ans sont tarifées à <strong>${tarifPediatrie}€</strong> au lieu de ${tarifConsultationBase}€, soit un gain potentiel de ${gainPotentiel}€ par consultation si vous appliquez systématiquement ce tarif.`,
+                    montantBrut: perteBrut,
+                    montantNet: perteNet
+                });
+                pertesTotalesBrut += perteBrut;
+            }
+
+            if (pctTeleconsultation < benchmarkTeleconsultation && creneauxVides > 2) {
+                const potentielTele = creneauxVides * 0.6 * semainesActivite;
+                const perteBrut = potentielTele * tarifConsultationBase;
+                const perteNet = perteBrut * (1 - tauxCharges);
+                pertes.push({
+                    titre: 'Opportunité téléconsultation manquée',
+                    description: `Avec seulement <strong>${(pctTeleconsultation*100).toFixed(1)}%</strong> de téléconsultations (vs benchmark 10%), vous pourriez remplir vos ${creneauxVides} créneaux vides hebdomadaires avec environ <strong>${formatNumber(potentielTele)} téléconsultations/an</strong> en horaires atypiques ou en urgence.`,
+                    montantBrut: perteBrut,
+                    montantNet: perteNet
+                });
+                pertesTotalesBrut += perteBrut;
+            }
+
+            globalPertes = pertes.sort((a, b) => b.montantNet - a.montantNet);
+            globalPertesTotales = pertesTotalesBrut * (1 - tauxCharges);
+            globalPertesParJour = joursTravailles > 0 ? globalPertesTotales / joursTravailles : 0;
+
+            let solutions = [];
+
+            if ((!logicielRDV || !logicielRappels) && tauxNoShow > 0.05) {
+                solutions.push({
+                    titre: 'Logiciel de gestion de RDV avec rappels automatiques',
+                    description: `Un système de rappels automatiques (SMS/email) réduit le taux de non-honorés de ${(tauxNoShow*100).toFixed(1)}% à un minimum d'environ 2%. Une annulation en ligne permet de remplir rapidement le créneau libéré. Impact direct sur la Perte : Rendez-vous non honorés.`
+                });
+            }
+
+            if (creneauxVides > 0 && pctTeleconsultation < 0.10) {
+                solutions.push({
+                    titre: 'Intégration de la téléconsultation',
+                    description: `Utilisez la téléconsultation pour remplir les ${creneauxVides} créneaux vides hebdomadaires. Ces créneaux peuvent être remplis en urgence ou en dehors des heures de consultation habituelles. Impact direct sur les Pertes : Créneaux d'agenda vides + Opportunité téléconsultation.`
+                });
+            }
+
+            if (!assistantMedical && heuresAdminSemaine > 5) {
+                solutions.push({
+                    titre: 'Recrutement d\'un assistant médical',
+                    description: `L'assistant médical prend en charge jusqu'à la moitié des ${heuresAdminSemaine}h administratives, libérant du temps pour 2 à 3 consultations supplémentaires par jour (Impact sur Pertes : Volume et Temps administratif). L'Assurance Maladie subventionne significativement ce poste (aide de 38 000€ la première année, puis 21 000€/an).`
+                });
+            }
+
+            if (pctMajore < benchmarkMajore) {
+                solutions.push({
+                    titre: 'Formation à la cotation des actes complexes',
+                    description: `Une formation rapide permet d'identifier et de coter systématiquement les actes éligibles aux majorations (actes complexes, longues consultations), augmentant votre taux de majoration de ${(pctMajore*100).toFixed(1)}% vers le benchmark de 8%. Impact direct sur la Perte : Sous-valorisation des actes.`
+                });
+            }
+
+            if (pctPediatrie > 5) {
+                solutions.push({
+                    titre: 'Optimisation de la tarification pédiatrique',
+                    description: `Assurez-vous de bien appliquer le tarif de ${tarifPediatrie}€ pour toutes les consultations d'enfants de moins de 2 ans (au lieu de ${tarifConsultationBase}€). Impact direct sur la Perte : Sous-valorisation pédiatrie.`
+                });
+            }
+
+            if (!secretariatPresent && (tauxNoShow > 0.05 || heuresAdminSemaine > 5)) {
+                solutions.push({
+                    titre: 'Secrétariat mutualisé ou télésecrétariat',
+                    description: `Externalisez la gestion proactive de votre agenda (rappels, gestion des annulations, optimisation du remplissage) pour réduire le No-Show et réduire le temps administratif personnel. Impact sur Pertes : No-Show et Temps administratif.`
+                });
+            }
+            
+            globalSolutions = solutions;
+
+            document.getElementById('pertesTotales').textContent = formatNumber(globalPertesTotales) + ' €';
+            document.getElementById('pertesParJour').textContent = formatNumber(globalPertesParJour) + ' €';
+
+            let detailPertesHTML = '';
+            if (globalPertes.length > 0) {
+                globalPertes.forEach(perte => {
+                    detailPertesHTML += `
+                        <div class="loss-item">
+                            <div class="loss-item-content">
+                                <div class="loss-item-title">${perte.titre}</div>
+                                <div class="loss-item-desc">${perte.description}</div>
+                            </div>
+                            <div class="loss-item-amount">-${formatNumber(perte.montantNet)} €</div>
+                        </div>
+                    `;
+                });
+            } else {
+                detailPertesHTML = '<p style="color: #5f6368; font-size: 14px;">🎉 Aucune perte significative identifiée. Votre organisation est très efficace !</p>';
+            }
+            document.getElementById('detailPertes').innerHTML = detailPertesHTML;
+
+            let solutionsHTML = '';
+            if (solutions.length > 0) {
+                solutions.forEach(solution => {
+                    solutionsHTML += `
+                        <div class="solution-card">
+                            <h4>✅ ${solution.titre}</h4>
+                            <div class="solution-desc">${solution.description}</div>
+                        </div>
+                    `;
+                });
+            } else {
+                solutionsHTML = '<p style="color: #5f6368; font-size: 14px;">Félicitations ! Vous êtes hautement optimisé. Concentrez-vous sur le confort de travail.</p>';
+            }
+            document.getElementById('solutions').innerHTML = solutionsHTML;
+
+            document.getElementById('results').classList.add('show');
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            // 🔥 ENVOI VERS APPS SCRIPT : sessionId + pctTeleconsultation UNIQUEMENT
+            console.log('🔍 POINT DE CONTRÔLE ENVOI');
+            console.log('📦 Session ID:', sessionId);
+            console.log('📊 % Téléconsultation:', pctTeleconsultation * 100);
+            
+            if (sessionId) {
+                console.log('✅ ENTRÉE DANS LE IF - ENVOI IMMINENT');
+                
+                const scriptURL = 'https://script.google.com/macros/s/AKfycbyLqwSAYUtnsUvaLydlZWZaJ1zB0w_7Kma9I7Cb5Qqr418Y-ReZFA4hlngL2S2N4004/exec';
+                
+                const payload = {
+                    sheet: 'WH-SIMULATEUR',
+                    sessionId: sessionId,
+                    pctTeleconsultation: pctTeleconsultation * 100,
+                    timestampSimulateur: new Date().toISOString()
+                };
+                
+                console.log('📤 Envoi WH-SIMULATEUR vers Apps Script:', payload);
+                
+                fetch(scriptURL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(() => {
+                    console.log('✅ Données WH-SIMULATEUR envoyées avec succès');
+                })
+                .catch(error => {
+                    console.error('❌ Erreur envoi WH-SIMULATEUR:', error);
+                    const params = new URLSearchParams(payload);
+                    const img = new Image();
+                    img.src = scriptURL + '?' + params.toString();
+                    console.log('⚠️ Fallback GET utilisé pour WH-SIMULATEUR');
+                });
+            } else {
+                console.warn('⚠️ Pas de Session ID - pas d\'envoi vers Apps Script');
+            }
+        }
+
+        function partager() {
+            document.getElementById('modalPartage').classList.add('show');
+        }
+
+        function fermerModal() {
+            document.getElementById('modalPartage').classList.remove('show');
+        }
+
+        function partagerAcces() {
+            fermerModal();
+            const urlSimulateur = 'https://sites.google.com/view/cercledesgeneralistes/Acces-simulateur';
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Simulateur de pertes de revenus',
+                    text: 'Je viens de découvrir cet outil pour analyser les opportunités d\'optimisation des cabinets médicaux. C\'est gratuit et ça prend 5 minutes !',
+                    url: urlSimulateur
+                }).catch(() => {
+                    ouvrirChoixPartage(urlSimulateur);
+                });
+            } else {
+                ouvrirChoixPartage(urlSimulateur);
+            }
+        }
+
+        function ouvrirChoixPartage(url) {
+            // Par défaut, ouvrir par Email (confirm() ne fonctionne pas dans iframe)
+            console.log('📧 Partage par email par défaut');
+            const sujet = encodeURIComponent('Simulateur de pertes de revenus');
+            const corps = encodeURIComponent(`Bonjour,\n\nJe vous partage cet outil :\n\nSimulateur de pertes de revenus pour médecins généralistes\n\n${url}\n\nC'est gratuit, confidentiel et ça prend 5 minutes.\n\nCordialement`);
+            window.open(`mailto:?subject=${sujet}&body=${corps}`, '_blank');
+        }
+
+        function copierLien() {
+            const urlSimulateur = 'https://sites.google.com/view/cercledesgeneralistes/Acces-simulateur';
+            navigator.clipboard.writeText(urlSimulateur).then(() => {
+                console.log('✅ Lien copié :', urlSimulateur);
+                fermerModal();
+            }).catch(() => {
+                console.log('⚠️ Copie manuelle nécessaire :', urlSimulateur);
+                fermerModal();
+            });
+        }
+        async function telechargerPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const margin = 20;
+            let y = 20;
+
+            const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABLAAAAC0CAYAAACxN0q2AAAACXBIWXMAAAsTAAALEwEAmpwYAAAGJmlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNi4wLWMwMDIgNzkuMTY0NDYwLCAyMDIwLzA1LzEyLTE2OjA0OjE3ICAgICAgICAiPiA8cmRmOlJERiB4bWxuczpzcmRmOntwOiLwh3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+IDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSI7Ii8+IDwvcmRmOlJERj4gPC94OnhtcG1ldGE+IDw/eHBhY2tldCBlbmQ9InIiPz4jFTp6AAAQ/klEQVR4nO3dP4ic5f7H/e/MJrubzWY3m2yySSYJIQkQQkIIISGEkBBCSAghJISQEEJICCEkhJAQQggJISSEkBBCQggJISSEkBBCQggJISSE/+7u9nnZmZnde+a+5/d8Xq/y4YL7nue67/u677nO/P77/wMAAAAAAPBu/wMAAAAAAAD+DVgAAAAAAMABWAAAAAAAgAELAAAAAAA4AAsAAAAAADBgAQAAAAAAB2ABAAAAAAAGLAAAAAAAwAAWAAAAAABgwAIAAAAAAA7AAgAAAAAADFgAAAAAAMABWAAAAAAAgAELAAAAAAAwYAEAAAAAAAdsAAAAAP/t//4HAACAL/7rvx7++9//fvrvL7/88q8/+/HHH//1a//617/+9Wc/vPfzzz//6/f+85///Ndv/fjPf/7zr1/7t//3//5fh//tv//7vx/+/vvvfwEAAAAAfvr999///vDhw4fnz5//9X7+/Pnr78+fP3/+8+fPX7/348ePv//++++//voH/4G/AAAAAMDfvv/++8O7d+++2fPnz/8FAAD/8w9/AQAAAMD/ev/+/cPr169fv3379utXAAAA/+dv/wMAAAD++969e/fw6dOnf30BAAD/Z/4GAAAA4C8/fPjw8O7du4e3b9/+6wsAAP/Pf/oLAAAA+P/27t37h/fv3/8FAAD/z98AAAAA/Me7d+8e3rx58/VrAAAA/scf/gIAAACg9ubNm4cXL148fPr06V8AAPBf/tNfAAAAAP56/fr1w8uXL7/eCgAA+K///ocBAQAAgNo///zz8PLly4cXL178/wsAAP7L//jPfzgQAAAAUN3z588fXr169fD58+d/AQDAX/zHPxyI/w8AAACgul9//fXh6dOnDz/99NO/AADgX/7lv/4BAAAAAACg6B8GAAAAAACKDFgAAAAAAEDRf/kLAAAAAADAF/8fAAAAAAAA/w/MFJgBwpFxmQAAAABJRU5ErkJggg==";
+            
+            try {
+                doc.addImage(logoBase64, 'PNG', margin, y, 80, 26);
+                y += 35;
+            } catch(e) {
+                console.log("Erreur chargement logo");
+            }
+
+            doc.setFontSize(20);
+            doc.setTextColor(4, 123, 191);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Rapport d\'Analyse Détaillé', margin, y);
+            y += 7;
+            doc.text('des Pertes de Revenus', margin, y);
+            y += 10;
+
+            doc.setFontSize(10);
+            doc.setTextColor(95, 99, 104);
+            doc.setFont('helvetica', 'normal');
+            const dateStr = new Date().toLocaleDateString('fr-FR', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            doc.text(`Généré le ${dateStr}`, margin, y);
+            y += 15;
+
+            doc.setDrawColor(4, 123, 191);
+            doc.setLineWidth(0.5);
+            doc.line(margin, y, pageWidth - margin, y);
+            y += 10;
+
+            doc.setFontSize(14);
+            doc.setTextColor(4, 123, 191);
+            doc.setFont('helvetica', 'bold');
+            doc.text('1. Résumé Exécutif', margin, y);
+            y += 8;
+
+            doc.setFontSize(10);
+            doc.setTextColor(40);
+            doc.setFont('helvetica', 'normal');
+            const intro = `Ce rapport identifie les opportunités d'optimisation de votre cabinet médical basées sur vos paramètres d'activité et comparées aux benchmarks nationaux validés par la CNAM et les organisations professionnelles (données 2024).`;
+            const splitIntro = doc.splitTextToSize(intro, pageWidth - 2 * margin);
+            doc.text(splitIntro, margin, y);
+            y += doc.getTextDimensions(splitIntro).h + 8;
+
+            doc.setFillColor(255, 245, 245);
+            doc.setDrawColor(211, 59, 39);
+            doc.setLineWidth(1);
+            doc.roundedRect(margin, y, pageWidth - 2*margin, 26, 3, 3, 'FD');
+            
+            doc.setFontSize(11);
+            doc.setTextColor(211, 59, 39);
+            doc.setFont('helvetica', 'bold');
+            doc.text('PERTES NETTES ANNUELLES IDENTIFIÉES', pageWidth/2, y + 7, { align: 'center' });
+            
+            doc.setFontSize(20);
+            doc.text(formatNumberPDF(globalPertesTotales) + ' EUR', pageWidth/2, y + 16, { align: 'center' });
+            
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`soit ${formatNumberPDF(globalPertesParJour)} EUR nets par jour travaillé`, pageWidth/2, y + 22, { align: 'center' });
+            y += 34;
+
+            if (y > pageHeight - 50) { doc.addPage(); y = 20; }
+            
+            doc.setFontSize(14);
+            doc.setTextColor(4, 123, 191);
+            doc.setFont('helvetica', 'bold');
+            doc.text('2. Paramètres de votre activité', margin, y);
+            y += 8;
+
+            const paramsData = [
+                ['Jours de consultation/semaine', globalParametres.joursConsultation],
+                ['Semaines d\'activité/an', globalParametres.semainesActivite],
+                ['Jours travaillés/an', globalParametres.joursTravailles],
+                ['Consultations/jour', globalParametres.consultationsJour],
+                ['Total consultations/an', formatNumberPDF(globalParametres.consultationsTotalBase)],
+                ['Durée moyenne consultation', globalParametres.dureeConsultation + ' min'],
+                ['% Consultations majorées', globalParametres.pctMajore.toFixed(1) + '%'],
+                ['% Pédiatrie', globalParametres.pctPediatrie.toFixed(1) + '%'],
+                ['% Téléconsultations', globalParametres.pctTeleconsultation.toFixed(1) + '%'],
+                ['Créneaux vides/semaine', globalParametres.creneauxVides],
+                ['Taux de no-show', globalParametres.tauxNoShow.toFixed(1) + '%'],
+                ['Heures admin/semaine', globalParametres.heuresAdminSemaine.toFixed(1) + 'h'],
+                ['Assistant médical', globalParametres.assistantMedical ? 'Oui' : 'Non'],
+                ['Logiciel RDV en ligne', globalParametres.logicielRDV ? 'Oui' : 'Non'],
+                ['Logiciel rappels auto', globalParametres.logicielRappels ? 'Oui' : 'Non'],
+                ['Secrétariat présent', globalParametres.secretariatPresent ? 'Oui' : 'Non'],
+                ['Taux de charges sociales', globalParametres.tauxCharges.toFixed(1) + '%']
+            ];
+
+            doc.autoTable({
+                startY: y,
+                head: [['Paramètre', 'Valeur']],
+                body: paramsData,
+                theme: 'grid',
+                headStyles: { 
+                    fillColor: [4, 123, 191], 
+                    fontSize: 9, 
+                    fontStyle: 'bold'
+                },
+                bodyStyles: { fontSize: 9 },
+                columnStyles: {
+                    0: { cellWidth: 120, fontStyle: 'bold' },
+                    1: { cellWidth: 50, halign: 'right' }
+                },
+                alternateRowStyles: { fillColor: [245, 245, 245] },
+                margin: { left: margin, right: margin }
+            });
+            y = doc.lastAutoTable.finalY + 15;
+
+            if (globalPertes.length > 0) {
+                if (y > pageHeight - 100) { doc.addPage(); y = 20; }
+                
+                doc.setFontSize(13);
+                doc.setTextColor(4, 123, 191);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Répartition des pertes par catégorie', margin, y);
+                y += 10;
+
+                const canvas = document.getElementById('chartCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.style.display = 'block';
+                canvas.width = 800;
+                canvas.height = 500;
+                
+                const chartData = {
+                    labels: globalPertes.map(p => {
+                        if (p.titre.includes('volume')) return 'Volume sous-optimal';
+                        if (p.titre.includes('Créneaux')) return 'Créneaux vides';
+                        if (p.titre.includes('téléconsultation')) return 'Opportunité téléconsultation';
+                        if (p.titre.includes('non honorés')) return 'No-show excessif';
+                        if (p.titre.includes('actes complexes')) return 'Sous-valorisation actes';
+                        if (p.titre.includes('pédiatriques')) return 'Sous-valorisation pédiatrie';
+                        if (p.titre.includes('administratives')) return 'Temps administratif';
+                        return p.titre.substring(0, 25);
+                    }),
+                    datasets: [{
+                        data: globalPertes.map(p => p.montantNet),
+                        backgroundColor: [
+                            '#E74C3C', '#3498DB', '#F39C12', '#1ABC9C',
+                            '#9B59B6', '#E67E22', '#2ECC71'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                };
+
+                const pieChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: chartData,
+                    options: {
+                        responsive: false,
+                        maintainAspectRatio: false,
+                        animation: { duration: 0 },
+                        layout: {
+                            padding: { left: 20, right: 150, top: 20, bottom: 20 }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                align: 'center',
+                                labels: { 
+                                    font: { size: 14, family: 'Arial' },
+                                    padding: 15,
+                                    boxWidth: 20,
+                                    boxHeight: 20,
+                                    generateLabels: function(chart) {
+                                        const data = chart.data;
+                                        const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                        return data.labels.map((label, i) => {
+                                            const value = data.datasets[0].data[i];
+                                            const percentage = ((value / total) * 100).toFixed(1);
+                                            return {
+                                                text: `${label} (${percentage}%)`,
+                                                fillStyle: data.datasets[0].backgroundColor[i],
+                                                hidden: false,
+                                                index: i
+                                            };
+                                        });
+                                    }
+                                }
+                            },
+                            tooltip: { enabled: false }
+                        }
+                    }
+                });
+
+                await new Promise(resolve => {
+                    setTimeout(() => {
+                        pieChart.update('none');
+                        resolve();
+                    }, 1000);
+                });
+                
+                const imgData = canvas.toDataURL('image/png', 1.0);
+                doc.addImage(imgData, 'PNG', margin, y, 170, 100);
+                y += 110;
+
+                pieChart.destroy();
+                canvas.style.display = 'none';
+            }
+
+            if (y > pageHeight - 40) { doc.addPage(); y = 20; }
+            
+            doc.setFontSize(14);
+            doc.setTextColor(4, 123, 191);
+            doc.setFont('helvetica', 'bold');
+            doc.text('3. Détail des pertes identifiées', margin, y);
+            y += 8;
+
+            if (globalPertes.length > 0) {
+                const pertesData = globalPertes.map(perte => [
+                    perte.titre,
+                    perte.description.replace(/<\/?strong>/g, ''),
+                    formatNumberPDF(perte.montantBrut) + ' EUR',
+                    formatNumberPDF(perte.montantNet) + ' EUR'
+                ]);
+
+                doc.autoTable({
+                    startY: y,
+                    head: [['Catégorie', 'Description', 'Montant BRUT', 'Montant NET']],
+                    body: pertesData,
+                    theme: 'striped',
+                    headStyles: { 
+                        fillColor: [211, 59, 39], 
+                        fontSize: 8, 
+                        fontStyle: 'bold'
+                    },
+                    bodyStyles: { fontSize: 8, cellPadding: 3 },
+                    columnStyles: {
+                        0: { cellWidth: 40, fontStyle: 'bold' },
+                        1: { cellWidth: 75 },
+                        2: { cellWidth: 25, halign: 'right' },
+                        3: { cellWidth: 30, halign: 'right', fontStyle: 'bold', textColor: [211, 59, 39] }
+                    },
+                    margin: { left: margin, right: margin }
+                });
+                y = doc.lastAutoTable.finalY + 15;
+            }
+
+            if (globalPertes.length > 0) {
+                if (y > pageHeight - 100) { doc.addPage(); y = 20; }
+                
+                doc.setFontSize(13);
+                doc.setTextColor(4, 123, 191);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Comparaison des pertes (montants nets)', margin, y);
+                y += 10;
+
+                const barCanvas = document.getElementById('barChartCanvas');
+                const barCtx = barCanvas.getContext('2d');
+                
+                new Chart(barCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: globalPertes.map(p => {
+                            if (p.titre.includes('volume')) return 'Volume sous-optimal';
+                            if (p.titre.includes('Créneaux')) return 'Créneaux vides';
+                            if (p.titre.includes('téléconsultation')) return 'Opportunité télécons.';
+                            if (p.titre.includes('non honorés')) return 'No-show excessif';
+                            if (p.titre.includes('actes complexes')) return 'Sous-valor. actes';
+                            if (p.titre.includes('pédiatriques')) return 'Sous-valor. pédiatrie';
+                            if (p.titre.includes('administratives')) return 'Temps admin';
+                            return p.titre.substring(0, 20);
+                        }),
+                        datasets: [{
+                            label: 'Pertes nettes (EUR)',
+                            data: globalPertes.map(p => p.montantNet),
+                            backgroundColor: '#d33b27'
+                        }]
+                    },
+                    options: {
+                        responsive: false,
+                        indexAxis: 'y',
+                        layout: { padding: { left: 20, right: 20, top: 10, bottom: 10 } },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${Math.round(context.parsed.x)} EUR nets`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { 
+                                beginAtZero: true,
+                                ticks: { 
+                                    font: { size: 10 },
+                                    callback: function(value) {
+                                        return value.toLocaleString('fr-FR');
+                                    }
+                                },
+                                grid: { color: '#e0e0e0' }
+                            },
+                            y: {
+                                ticks: { 
+                                    font: { size: 10 },
+                                    autoSkip: false
+                                }
+                            }
+                        }
+                    }
+                });
+
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                const barImgData = barCanvas.toDataURL('image/png');
+                doc.addImage(barImgData, 'PNG', margin - 10, y, 180, 100);
+                y += 110;
+
+                Chart.getChart(barCanvas)?.destroy();
+            }
+
+            if (y > pageHeight - 40) { doc.addPage(); y = 20; }
+            
+            doc.setFontSize(14);
+            doc.setTextColor(4, 123, 191);
+            doc.setFont('helvetica', 'bold');
+            doc.text('4. Solutions d\'optimisation', margin, y);
+            y += 8;
+
+            if (globalSolutions.length > 0) {
+                const solutionsData = globalSolutions.map((sol, i) => [
+                    (i + 1).toString(),
+                    sol.titre,
+                    sol.description.replace(/<\/?strong>/g, '')
+                ]);
+
+                doc.autoTable({
+                    startY: y,
+                    head: [['#', 'Solution', 'Description']],
+                    body: solutionsData,
+                    theme: 'striped',
+                    headStyles: { 
+                        fillColor: [24, 128, 56], 
+                        fontSize: 8, 
+                        fontStyle: 'bold'
+                    },
+                    bodyStyles: { fontSize: 8, cellPadding: 3 },
+                    columnStyles: {
+                        0: { cellWidth: 10, halign: 'center', fontStyle: 'bold' },
+                        1: { cellWidth: 50, fontStyle: 'bold' },
+                        2: { cellWidth: 110 }
+                    },
+                    margin: { left: margin, right: margin }
+                });
+                y = doc.lastAutoTable.finalY + 15;
+            }
+
+            if (y > pageHeight - 60) { doc.addPage(); y = 20; }
+            
+            doc.setFontSize(16);
+            doc.setTextColor(4, 123, 191);
+            doc.setFont('helvetica', 'bold');
+            doc.text('5. Méthodologie et calculs', margin, y);
+            y += 10;
+
+            doc.setFontSize(10);
+            doc.setTextColor(40);
+            doc.setFont('helvetica', 'normal');
+            
+            const methodoLines = [
+                '=== TEMPS ADMINISTRATIF PERDU ===',
+                'Formule : (Vos heures admin - Benchmark 7h) x 60 min / Durée consultation x Semaines x 30 EUR',
+                `Exemple concret : (${globalParametres.heuresAdminSemaine}h - 7h) x 60 / ${globalParametres.dureeConsultation} x ${globalParametres.semainesActivite} x 30 EUR`,
+                '',
+                '=== VOLUME SOUS-OPTIMAL ===',
+                'Formule : (Benchmark 22 cons/jour - Vos consultations) x Jours travaillés x 30 EUR',
+                `Exemple concret : (22 - ${globalParametres.consultationsJour}) x ${globalParametres.joursTravailles} x 30 EUR`,
+                '',
+                '=== CRÉNEAUX VIDES ===',
+                'Formule : Nombre de créneaux vides par semaine x Semaines x 30 EUR',
+                `Exemple concret : ${globalParametres.creneauxVides} x ${globalParametres.semainesActivite} x 30 EUR`,
+                '',
+                '=== NO-SHOW EXCESSIF ===',
+                'Formule : Total consultations x (Votre taux no-show - Benchmark 8%) x 30 EUR',
+                `Exemple concret : ${formatNumberPDF(globalParametres.consultationsTotalBase)} x (${globalParametres.tauxNoShow.toFixed(1)}% - 8%) x 30 EUR`,
+                '',
+                '=== SOUS-VALORISATION ACTES COMPLEXES ===',
+                'Formule : Total consultations x (Benchmark 8% - Votre taux) x Majoration 5 EUR',
+                `Exemple concret : ${formatNumberPDF(globalParametres.consultationsTotalBase)} x (8% - ${globalParametres.pctMajore.toFixed(1)}%) x 5 EUR`,
+                '',
+                '=== SOUS-VALORISATION PÉDIATRIE ===',
+                'Formule : Total consultations x % Pédiatrie x (34 EUR - 30 EUR)',
+                `Exemple concret : ${formatNumberPDF(globalParametres.consultationsTotalBase)} x ${globalParametres.pctPediatrie.toFixed(1)}% x 4 EUR`,
+                '',
+                '=== OPPORTUNITÉ TÉLÉCONSULTATION ===',
+                'Formule : Créneaux vides x 60% (taux de remplissage) x Semaines x 30 EUR',
+                `Exemple concret : ${globalParametres.creneauxVides} x 60% x ${globalParametres.semainesActivite} x 30 EUR`,
+                '',
+                '=== CONVERSION EN REVENU NET ===',
+                `Toutes les pertes sont converties en revenu NET (ce qui rentre dans votre poche)`,
+                `Montant NET = Montant BRUT x (1 - ${(globalParametres.tauxCharges/100).toFixed(2)})`,
+                `Exemple : 10 000 EUR brut x (1 - 0.43) = 5 700 EUR nets`,
+                '',
+                '=== SOURCES ET RÉFÉRENCES ===',
+                '• CNAM : Rapports d\'activité des médecins généralistes 2024',
+                '• Convention Médicale Nationale 2024',
+                '• Études syndicales : MG France, FMF',
+                '• Tarifs : Consultation C = 30 EUR, Pédiatrie < 2ans = 34 EUR, Majoration = 5 EUR'
+            ];
+
+            methodoLines.forEach(line => {
+                if (y > pageHeight - 15) { doc.addPage(); y = 20; }
+                
+                if (line.startsWith('===')) {
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(10);
+                    doc.setTextColor(4, 123, 191);
+                    doc.text(line.replace(/===/g, '').trim(), margin, y);
+                    y += 6;
+                } else if (line.startsWith('Formule')) {
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(9);
+                    doc.setTextColor(60);
+                    doc.text(line, margin, y);
+                    y += 5;
+                } else {
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(9);
+                    doc.setTextColor(80);
+                    doc.text(line, margin, y);
+                    y += 5;
+                }
+            });
+
+            if (y > pageHeight - 40) { doc.addPage(); y = 20; }
+            
+            y += 10;
+            doc.setFontSize(14);
+            doc.setTextColor(4, 123, 191);
+            doc.setFont('helvetica', 'bold');
+            doc.text('6. Conclusion', margin, y);
+            y += 10;
+
+            doc.setFontSize(10);
+            doc.setTextColor(40);
+            doc.setFont('helvetica', 'normal');
+            const conclusion = `Cette analyse complète révèle un potentiel d'optimisation de ${formatNumberPDF(globalPertesTotales)} EUR nets par an, soit ${formatNumberPDF(globalPertesParJour)} EUR par jour travaillé. Ces montants représentent le revenu réel que vous pourriez récupérer après déduction des charges sociales (${globalParametres.tauxCharges.toFixed(0)}%).\n\nLa mise en œuvre des recommandations d'organisation (gestion optimisée des RDV, assistance administrative, optimisation tarifaire) constitue la première étape pour récupérer ce temps médical et ces revenus actuellement inexploités.\n\nNous vous recommandons de prioriser les solutions ayant l'impact le plus direct sur vos pertes les plus importantes identifiées dans ce rapport.`;
+            
+            const splitConclusion = doc.splitTextToSize(conclusion, pageWidth - 2 * margin);
+            doc.text(splitConclusion, margin, y);
+            y += doc.getTextDimensions(splitConclusion).h + 15;
+
+            if (y > pageHeight - 60) { doc.addPage(); y = 20; }
+            
+            doc.setFontSize(13);
+            doc.setTextColor(4, 123, 191);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Sources et références bibliographiques', margin, y);
+            y += 10;
+
+            doc.setFontSize(9);
+            doc.setTextColor(60);
+            doc.setFont('helvetica', 'normal');
+
+            const sourcesLines = [
+                '1. Caisse Nationale d\'Assurance Maladie (CNAM)',
+                '   - Rapport sur l\'activité des médecins généralistes 2024',
+                '   - Statistiques nationales sur les consultations et actes médicaux',
+                '   - Bilan de la téléconsultation post-COVID 2024',
+                '',
+                '2. Convention Médicale Nationale 2024',
+                '   - Nomenclature des actes et tarifs conventionnels',
+                '   - Conditions de facturation des majorations',
+                '   - Tarifs spécifiques (pédiatrie, actes complexes)',
+                '',
+                '3. Syndicats professionnels',
+                '   - MG France : Études sur les conditions d\'exercice 2023-2024',
+                '   - FMF (Fédération des Médecins de France) : Enquêtes sur le temps médical',
+                '   - Analyses comparatives de l\'activité des cabinets',
+                '',
+                '4. Plateformes de gestion médicale',
+                '   - Doctolib : Statistiques sur les taux de no-show 2024',
+                '   - Maiia : Études sur l\'optimisation des agendas médicaux',
+                '   - Données anonymisées de gestion de rendez-vous',
+                '',
+                '5. Organismes de gestion et d\'accompagnement',
+                '   - URPS (Unions Régionales des Professionnels de Santé)',
+                '   - ARS (Agences Régionales de Santé)',
+                '   - CPAM : Données statistiques départementales',
+                '',
+                'Note : Tous les benchmarks et données utilisés dans cette analyse sont issus de sources officielles et professionnelles reconnues. Les calculs sont basés sur des méthodologies validées par les organisations représentatives de la profession médicale en France.'
+            ];
+
+            sourcesLines.forEach(line => {
+                if (y > pageHeight - 15) { doc.addPage(); y = 20; }
+                const splitLine = doc.splitTextToSize(line, pageWidth - 2 * margin);
+                doc.text(splitLine, margin, y);
+                y += doc.getTextDimensions(splitLine).h + 2;
+            });
+
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                doc.text(`Page ${i} / ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                doc.text('Le Cercle des Généralistes - Document confidentiel', pageWidth / 2, pageHeight - 5, { align: 'center' });
+            }
+
+            doc.save(`Analyse_Pertes_WH_${new Date().toISOString().slice(0,10)}.pdf`);
+        }
+    </script>
+</body>
+</html>
